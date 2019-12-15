@@ -20,7 +20,6 @@ class source : public cSimpleModule
 
   private:
     simtime_t meanTime;
-    myPacket *firstPck;
     unsigned int seq;
 };
 
@@ -32,14 +31,14 @@ void source::initialize()
     /*Send packet to itself after meanTime (lambda=1/meanTime)*/
     meanTime=1/2;
 
-     /*Initialize sequence number*/
+    /*Initialize sequence number*/
     seq=1;
 
-//    cMessage *msg = new cMessage("tictocMsg");
-//    scheduleAt(meanTime,msg);
+    cMessage *msg = new cMessage("INIT SOURCE");
+    scheduleAt(meanTime,msg);
 
-    firstPck = new myPacket();
-    scheduleAt(meanTime, firstPck);
+//    firstPck = new myPacket();
+//    scheduleAt(meanTime, firstPck);
 
 }
 
@@ -51,21 +50,19 @@ void source::handleMessage(cMessage *msg)
 
      exponential(): Generates random numbers from the exponential distribution.*/
 
-//    send(msg, "out");
-//    cMessage *msg2 = new cMessage("basicMsg");
-//    scheduleAt(simTime()+exponential(meanTime),msg2);
-
     myPacket *pck = createPck();
     send(pck, "out");
 
-    /*I use firstPck as the handleMessage trigger to make periodic events*/
-    scheduleAt(simTime()+exponential(meanTime),firstPck);
+    char namePck[15];
+    sprintf(namePck,"pck-%d",seq);
+    cMessage *msgEvent = new cMessage(namePck);
+    scheduleAt(simTime()+exponential(meanTime),msgEvent);
 
 }
 
 myPacket *source::createPck() /*Returns the pointer of the created pck*/
 {
-    myPacket *pck = new myPacket();
+    myPacket *pck = new myPacket(); // TODO: Comprobar si no es necesario pasarle valores
     pck->setSeq(seq++);
     pck->setType(TYPE_PCK);
     pck->setBitLength(1024);
