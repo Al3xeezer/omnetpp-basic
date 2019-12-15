@@ -1,9 +1,16 @@
-// This file is distributed WITHOUT ANY WARRANTY. See the file
-// `license' for details on this and other legal matters.
-
 
 #include <string.h>
 #include <omnetpp.h>
+#include "myPacket_m.h"  // Use "myPacket" packet structure
+
+/*Type definitions for myPacket*/
+#define TYPE_PCK 0
+#define TYPE_ACK 1
+#define TYPE_NACK 2
+
+/*Cases for state_machine*/
+#define STATE_IDLE 0
+#define STATE_BUSY 1
 
 using namespace omnetpp;
 
@@ -11,9 +18,15 @@ using namespace omnetpp;
 class sender : public cSimpleModule
 {
   protected:
-    // The following redefined virtual function holds the algorithm.
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
+    virtual void sendCopyOf(myPacket *pck);
+
+  private:
+    cQueue *txQueue; /*Define queue for transmission*/
+    unsigned short state_machine;
+    cMessage *control;
+    myPacket *newPck;
 };
 
 // The module class needs to be registered with OMNeT++
@@ -21,18 +34,60 @@ Define_Module(sender);
 
 void sender::initialize()
 {
-    // Initialize is called at the beginning of the simulation.
-    // To bootstrap the tic-toc-tic-toc process, one of the modules needs
-    // to send the first message. Let this be `tic'.
-
+    /*Initialize the Queue for tx*/
+    txQueue = new cQueue("txQueue");
+    control = new cMessage("control");
+    WATCH(state_machine);
 }
 
 void sender::handleMessage(cMessage *msg)
 {
-    // The handleMessage() method is called whenever a message arrives
-    // at the module. Here, we just send it to the other module, through
+    if (msg!=control) {
 
-    EV << msg->getArrivalGate()->getFullName();
-    send(msg, "out"); // send out the message
+        /*Cast <msg> to <myPacket>*/
+        myPacket *pck = check_and_cast<myPacket *>(msg);
+
+        /*State Machine*/
+        if (msg->arrivedOn("InS")) {
+            switch (state_machine) {
+                case STATE_IDLE:
+                    sendCopyOf(pck);
+                    break;
+
+                case STATE_BUSY:
+                    txQueue->insert(pck);
+                    break;
+            }
+        } else {
+            switch (pck->getType()) {
+                case TYPE_ACK:
+                    if(txQueue-> isEmpty()){
+                        state_machine = STATE_IDLE;
+                    }else{
+                        /*Remove acknowledged packet*/
+                        txQueue->pop();
+
+                        /*Read first packet of the queue (without removing it)*/
+                        newPck = (myPacket *)txQueue->front();
+                        sendCopyOf(newPck);
+                    }
+                    break;
+
+                case TYPE_NACK:
+                    /*Read first packet of the queue (without removing it)*/
+                    newPck = (myPacket *)txQueue->front();
+                    sendCopyOf(newPck);
+                    break;
+            }
+        }
+    }
 }
 
+void sender::sendCopyOf(myPacket *pck)
+{
+    send(pck, "out");
+    state_machine=STATE_BUSY;
+
+    simtime_t txFinishTime = pck->getSenderGate()->getTransmissionChannel()->getTransmissionFinishTime();
+    scheduleAt(txFinishTime,control);
+}
