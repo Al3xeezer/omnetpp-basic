@@ -13,6 +13,9 @@ using namespace omnetpp;
 
 class source : public cSimpleModule
 {
+  public:
+    virtual ~source();
+
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
@@ -21,10 +24,17 @@ class source : public cSimpleModule
   private:
     simtime_t meanTime;
     unsigned int seq;
+    cMessage *msgEvent;
 };
 
 // The module class needs to be registered with OMNeT++
 Define_Module(source);
+
+/*Destructor... Used to remove "undisposed object:...basic.source.pck-x"*/
+source::~source(){
+    cancelAndDelete(msgEvent);
+}
+
 
 void source::initialize()
 {
@@ -34,35 +44,40 @@ void source::initialize()
     /*Initialize sequence number*/
     seq=1;
 
-    cMessage *msg = new cMessage("INIT SOURCE");
-    scheduleAt(meanTime,msg);
-
-//    firstPck = new myPacket();
-//    scheduleAt(meanTime, firstPck);
+    msgEvent = new cMessage("INIT SOURCE");
+    scheduleAt(meanTime,msgEvent);
 
 }
 
 void source::handleMessage(cMessage *msg)
 {
-/*     The handleMessage() method is called whenever a message arrives
+/*   The handleMessage() method is called whenever a message arrives
      at the module. Here, when an event is received, it sends the packet
      and creates another event in X seconds. Like a loop.
 
-     exponential(): Generates random numbers from the exponential distribution.*/
+     exponential(): Generates random numbers from the exponential distribution.
 
+     cancelAndDelete() remove "undisposed object:...basic.source.pck-x"   */
+
+    cancelAndDelete(msgEvent);
     myPacket *pck = createPck();
     send(pck, "out");
 
     char namePck[15];
     sprintf(namePck,"pck-%d",seq);
-    cMessage *msgEvent = new cMessage(namePck);
+    msgEvent = new cMessage(namePck);
     scheduleAt(simTime()+exponential(meanTime),msgEvent);
 
 }
 
 myPacket *source::createPck() /*Returns the pointer of the created pck*/
 {
-    myPacket *pck = new myPacket(); // TODO: Comprobar si no es necesario pasarle valores
+    char someName[15];
+    sprintf(someName,"pck-%d",seq);
+    myPacket *pck = new myPacket(someName,0);
+
+    //myPacket *pck = new myPacket(); // TODO: Comprobar si no es necesario pasarle valores
+
     pck->setSeq(seq++);
     pck->setType(TYPE_PCK);
     pck->setBitLength(1024);
