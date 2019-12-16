@@ -1,6 +1,3 @@
-// This file is distributed WITHOUT ANY WARRANTY. See the file
-// `license' for details on this and other legal matters.
-
 
 #include <string.h>
 #include <omnetpp.h>
@@ -33,13 +30,16 @@ void receiver::initialize()
 
 void receiver::handleMessage(cMessage *msg)
 {
+    EV << "New pck in receiver";
     myPacket *pck = check_and_cast<myPacket *>(msg);
 
        if(pck->hasBitError()){
+           EV << "Has error. Sending NACK";
            createPck(pck->getSeq(), TYPE_NACK);
        }
        else
        {
+           EV << "No error. Sending ACK";
            createPck(pck->getSeq(), TYPE_ACK);
        }
 }
