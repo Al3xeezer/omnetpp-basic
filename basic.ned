@@ -52,8 +52,10 @@ network basic
             @display("p=279,152");
         }
     connections:
-        source.out --> Ethernet100 --> sender.inS;
-        sender.in <-- Ethernet100 <-- receiver.out;
-        receiver.in <-- Ethernet100 <-- sender.out;
+        source.out --> sender.inS;
+        sender.out --> Ethernet100 --> receiver.in;
+        receiver.out --> Ethernet100 --> sender.in;
+        //sender.in <-- Ethernet100 <-- receiver.out;
+        //receiver.in <-- Ethernet100 <-- sender.out;
 }
 
