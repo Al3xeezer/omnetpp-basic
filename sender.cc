@@ -17,26 +17,36 @@ using namespace omnetpp;
 
 class sender : public cSimpleModule
 {
+  public:
+    virtual ~sender();
+
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
     virtual void sendCopyOf(myPacket *pck);
 
   private:
-    cQueue *txQueue; /*Define queue for transmission*/
-    unsigned short state_machine;
-    cMessage *control;
+    cQueue *txQueue;                    /*Define queue for transmission*/
+    unsigned short state_machine;       /*Define state_machine to react to diff events*/
+    cMessage *control;                  /*Used as a trigger event for rtx*/
     myPacket *newPck;
 };
 
 // The module class needs to be registered with OMNeT++
 Define_Module(sender);
 
+sender::~sender(){
+    txQueue->~cQueue();
+}
+
+
+
 void sender::initialize()
 {
     /*Initialize the Queue for tx*/
     txQueue = new cQueue("txQueue");
     control = new cMessage("control");
+    state_machine = STATE_IDLE;
     WATCH(state_machine);
 }
 
@@ -48,13 +58,17 @@ void sender::handleMessage(cMessage *msg)
         myPacket *pck = check_and_cast<myPacket *>(msg);
 
         /*State Machine*/
-        if (msg->arrivedOn("InS")) {
+        if (msg->arrivedOn("inS")) {
+
+            EV << "New pck from source"<<endl;
+
             switch (state_machine) {
                 case STATE_IDLE:
                     sendCopyOf(pck);
                     break;
 
                 case STATE_BUSY:
+                    EV << "Queue +1";
                     txQueue->insert(pck);
                     break;
             }
@@ -80,14 +94,17 @@ void sender::handleMessage(cMessage *msg)
                     break;
             }
         }
+        //delete(pck);
     }
 }
 
 void sender::sendCopyOf(myPacket *pck)
 {
+    EV << "Sending pck";
     send(pck, "out");
     state_machine=STATE_BUSY;
 
-    simtime_t txFinishTime = pck->getSenderGate()->getTransmissionChannel()->getTransmissionFinishTime();
-    scheduleAt(txFinishTime,control);
+    //simtime_t txFinishTime = pck->getSenderGate()->getTransmissionChannel()->getTransmissionFinishTime();
+    simtime_t FinishTime = gate("out")->getTransmissionChannel()->getTransmissionFinishTime();
+    scheduleAt(FinishTime,control);
 }
