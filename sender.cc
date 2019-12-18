@@ -28,7 +28,7 @@ class sender : public cSimpleModule
   private:
     cQueue *txQueue;                    /*Define queue for transmission*/
     unsigned short state_machine;       /*Define state_machine to react to diff events*/
-    cMessage *control;                  /*Used as a trigger event for rtx*/
+    cMessage *timeout;                  /*Used as a trigger event for rtx*/
     myPacket *newPck;
 };
 
@@ -45,14 +45,14 @@ void sender::initialize()
 {
     /*Initialize the Queue for tx*/
     txQueue = new cQueue("txQueue");
-    control = new cMessage("control");
+    timeout = new cMessage("timeout");
     state_machine = STATE_IDLE;
     WATCH(state_machine);
 }
 
 void sender::handleMessage(cMessage *msg)
 {
-    if (msg!=control) {
+    if (msg!=timeout) {
 
         /*Cast <msg> to <myPacket>*/
         myPacket *pck = check_and_cast<myPacket *>(msg);
@@ -73,6 +73,9 @@ void sender::handleMessage(cMessage *msg)
                     break;
             }
         } else {
+            /*Cancel reTransmission timer*/
+            cancelEvent(timeout);
+
             switch (pck->getType()) {
                 case TYPE_ACK:
                     if(txQueue-> isEmpty()){
@@ -95,16 +98,27 @@ void sender::handleMessage(cMessage *msg)
             }
         }
         //delete(pck);
+    } else {
+        EV << "Timeout reached: generating new pck";
+        newPck = (myPacket *)txQueue->front();
+        sendCopyOf(newPck);
+
     }
 }
 
 void sender::sendCopyOf(myPacket *pck)
 {
     EV << "Sending pck";
-    send(pck, "out");
+    send(pck,"out");
+
+    //cMessage *msg2 = check_and_cast<cMessage *>(pck);
+    //send(msg2,"out");
+
     state_machine=STATE_BUSY;
+    //timeout = new cMessage("timeout");
 
     //simtime_t txFinishTime = pck->getSenderGate()->getTransmissionChannel()->getTransmissionFinishTime();
     simtime_t FinishTime = gate("out")->getTransmissionChannel()->getTransmissionFinishTime();
-    scheduleAt(FinishTime,control);
+    simtime_t nextTime = simTime()+3*(FinishTime-simTime());
+    scheduleAt(nextTime,timeout);
 }

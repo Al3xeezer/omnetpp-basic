@@ -39,7 +39,7 @@ source::~source(){
 void source::initialize()
 {
     /*Send packet to itself after meanTime (lambda=1/meanTime)*/
-    meanTime=1/2;
+    meanTime=0.5;
 
     /*Initialize sequence number*/
     seq=1;

@@ -30,16 +30,16 @@ void receiver::initialize()
 
 void receiver::handleMessage(cMessage *msg)
 {
-    EV << "New pck in receiver";
+    EV << "New pck in receiver"<<endl;
     myPacket *pck = check_and_cast<myPacket *>(msg);
 
        if(pck->hasBitError()){
-           EV << "Has error. Sending NACK";
+           EV << "Has error. Sending NACK"<<endl;
            createPck(pck->getSeq(), TYPE_NACK);
        }
        else
        {
-           EV << "No error. Sending ACK";
+           EV << "No error. Sending ACK"<<endl;
            createPck(pck->getSeq(), TYPE_ACK);
        }
 }
