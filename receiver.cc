@@ -23,6 +23,7 @@ class receiver : public cSimpleModule
 // The module class needs to be registered with OMNeT++
 Define_Module(receiver);
 
+
 void receiver::initialize()
 {
 
@@ -46,7 +47,10 @@ void receiver::handleMessage(cMessage *msg)
 
 void receiver::createPck(unsigned int seq, unsigned short TYPE) /*Returns the pointer of the created pck*/
 {
-    myPacket *pck = new myPacket();
+    char someName[15];
+    sprintf(someName,"pck-%d",seq);
+    myPacket *pck = new myPacket(someName,0);
+
     pck->setSeq(seq);
     pck->setType(TYPE);
     pck->setBitLength(1024);

@@ -38,8 +38,9 @@ network basic
     types:
         channel Ethernet100 extends ned.DatarateChannel
         {
-            datarate = 100Mbps;
-            per = 0.01;
+            //datarate = 100Mbps;
+            datarate = 9600bps;
+            per = 0.5;
         }
     submodules:
         source: source {

@@ -76,8 +76,6 @@ myPacket *source::createPck() /*Returns the pointer of the created pck*/
     sprintf(someName,"pck-%d",seq);
     myPacket *pck = new myPacket(someName,0);
 
-    //myPacket *pck = new myPacket(); // TODO: Comprobar si no es necesario pasarle valores
-
     pck->setSeq(seq++);
     pck->setType(TYPE_PCK);
     pck->setBitLength(1024);

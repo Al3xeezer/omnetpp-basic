@@ -73,34 +73,37 @@ void sender::handleMessage(cMessage *msg)
                     break;
             }
         } else {
-            /*Cancel reTransmission timer*/
+            /*Cancel retransmission timer*/
             cancelEvent(timeout);
+
+            /*Get the pending of acknowledge pck from queue*/
+            newPck = (myPacket *)txQueue->pop();
 
             switch (pck->getType()) {
                 case TYPE_ACK:
+                    /*Already acknowledged, delete it and go for the next one*/
+                    delete(newPck);
+
+                    /*Check if the queue is empty or not*/
                     if(txQueue-> isEmpty()){
                         state_machine = STATE_IDLE;
                     }else{
-                        /*Remove acknowledged packet*/
-                        txQueue->pop();
-
-                        /*Read first packet of the queue (without removing it)*/
-                        newPck = (myPacket *)txQueue->front();
+                        /*Read first packet of the queue*/
+                        newPck = (myPacket *)txQueue->pop();
                         sendCopyOf(newPck);
                     }
                     break;
 
                 case TYPE_NACK:
-                    /*Read first packet of the queue (without removing it)*/
-                    newPck = (myPacket *)txQueue->front();
+                    /*Read first packet of the queue*/
                     sendCopyOf(newPck);
                     break;
             }
         }
-        //delete(pck);
+        //delete(pck)
     } else {
-        EV << "Timeout reached: generating new pck";
-        newPck = (myPacket *)txQueue->front();
+        EV << "SENDER: Timeout reached: generating new pck";
+        newPck = (myPacket *)txQueue->pop();
         sendCopyOf(newPck);
 
     }
@@ -108,16 +111,22 @@ void sender::handleMessage(cMessage *msg)
 
 void sender::sendCopyOf(myPacket *pck)
 {
-    EV << "Sending pck";
+    EV << "SENDER: Sending pck";
+
+    /*Duplicate the pck, send one and store the copy in queue (first element) */
+    myPacket *copy = pck->dup();
+
+    if (txQueue->isEmpty()) {
+        txQueue->insert(copy);
+    } else {
+        txQueue->insertBefore(txQueue->front(), copy);
+    }
+
     send(pck,"out");
 
-    //cMessage *msg2 = check_and_cast<cMessage *>(pck);
-    //send(msg2,"out");
-
     state_machine=STATE_BUSY;
-    //timeout = new cMessage("timeout");
 
-    //simtime_t txFinishTime = pck->getSenderGate()->getTransmissionChannel()->getTransmissionFinishTime();
+    /*Set the retransmission timer to 3 times the sending time (just need to be greater than RTT)*/
     simtime_t FinishTime = gate("out")->getTransmissionChannel()->getTransmissionFinishTime();
     simtime_t nextTime = simTime()+3*(FinishTime-simTime());
     scheduleAt(nextTime,timeout);
