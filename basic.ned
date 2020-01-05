@@ -11,6 +11,7 @@
 
 simple sender
 {
+    @display("i=block/tx");
     gates:
         input inS;
         input in;
@@ -19,6 +20,7 @@ simple sender
 
 simple receiver
 {
+    @display("i=block/rx");
     gates:
         input in;
         output out;
@@ -26,6 +28,7 @@ simple receiver
 
 simple source
 {
+    @display("i=block/source");
     gates:
         output out;
 }
