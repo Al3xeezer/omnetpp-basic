@@ -19,7 +19,7 @@ Antes de comenzar a explicar el funcionamiento de cada uno de los módulos, se h
 ## Topología de red
 El esquema de red que se ha definido es el siguiente:
 
-![Esquema de red](/img/esquema.PNG)
+![Esquema de red](/img/esquema.png)
 
 En este esquema se pueden observar los tres módulos simples definidos: sender, receiver y source. Además, para simular el envío de paquetes a través de enlaces "reales" (con probabilidad de error, retardo, etc.) se ha definido el canal *Ethernet100*. Este canal se ha utilizado para unir el módulo emisor y el de receptor.
 
